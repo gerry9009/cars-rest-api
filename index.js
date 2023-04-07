@@ -14,17 +14,18 @@ const server = http.createServer((req, res) => {
 
   // GET All queries
   const query = url.searchParams;
-  const queries = query.entries();
+  const queryEntries = query.entries();
+
+  let queries = {};
+  let queriesKeys = [];
+  for (const query of queryEntries) {
+    queries[query[0]] = query[1];
+    queriesKeys.push(query[0]);
+  }
 
   // Get ID from the URL
   const match = url.pathname.match(/^\/api\/products\/(\d+)$/);
   const id = match ? match[1] : null;
-
-  //console.log(url);
-  //console.log(id);
-  //console.log(pathname);
-  //console.log(queries);
-  //console.log(query.get());
 
   // Creating routes
   switch (true) {
@@ -152,7 +153,7 @@ const server = http.createServer((req, res) => {
 
       break;
 
-    //TODO: /api/products/{id} -> DELETE a item from the list by id
+    //*         /api/products/{id} -> DELETE a item from the list by id
     case id && req.method === "DELETE":
       fs.readFile("./api/cars.json", (err, data) => {
         if (err) {
@@ -179,16 +180,73 @@ const server = http.createServer((req, res) => {
       });
       break;
 
-    //TODO: /api/fuels
+    case pathname === "/api/products/" &&
+      req.method === "GET" &&
+      queriesKeys.length > 0:
+      /**
+       * name
+       * fuel_types
+       * type
+       *
+       * min_seats
+       * max_seats
+       *
+       * min_price
+       * max_price
+       *
+       * min_production_year
+       * max_production_year
+       */
+      fs.readFile("./api/cars.json", (err, data) => {
+        if (err) {
+          res.writeHead(500);
+          res.end("Data error");
+        } else {
+          let cars = JSON.parse(data);
+
+          //*       Querying data
+          for (const query of queriesKeys) {
+            if (query === "min_seats") {
+              cars = cars.filter((car) => car.seats > queries[query]);
+            } else if (query === "max_seats") {
+              cars = cars.filter((car) => car.seats < queries[query]);
+            } else if (query === "min_price") {
+              cars = cars.filter((car) => {
+                const price = car.price.substring(1);
+                return Number(price) > Number(queries[query]);
+              });
+            } else if (query === "max_price") {
+              cars = cars.filter((car) => {
+                const price = car.price.substring(1);
+                return Number(price) < Number(queries[query]);
+              });
+            } else if (query === "min_production_year") {
+              cars = cars.filter((car) => car.production_year > queries[query]);
+            } else if (query === "max_production_year") {
+              cars = cars.filter((car) => car.production_year < queries[query]);
+            } else {
+              cars = cars.filter((car) => car[query] === queries[query]);
+            }
+          }
+
+          res.setHeader("Content-Type", "application/json");
+          res.writeHead(200);
+          res.end(JSON.stringify(cars));
+        }
+      });
+
+      break;
+    //*         /api/fuels
     case pathname === "/api/fuels" && req.method === "GET":
       res.end(JSON.stringify(getFuelsList()));
       break;
-    //TODO: /api/types
+
+    //*         /api/types
     case pathname === "/api/types" && req.method === "GET":
       res.end(JSON.stringify(getTypeList()));
       break;
 
-    //TODO: Get default response
+    //*         Get default response
     default:
       res.writeHead(404);
       res.end("Page not found");
