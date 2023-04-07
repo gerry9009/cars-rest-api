@@ -5,7 +5,7 @@ const fs = require("fs");
 
 const port = process.env.PORT || 8000;
 
-const { getRandomId } = require("./modules.js");
+const { getRandomId, getTypeList, getFuelsList } = require("./modules.js");
 const { dataValidation } = require("./validations.js");
 
 const server = http.createServer((req, res) => {
@@ -21,8 +21,9 @@ const server = http.createServer((req, res) => {
   const id = match ? match[1] : null;
 
   //console.log(url);
-  console.log(id);
-  console.log(pathname);
+  //console.log(id);
+  //console.log(pathname);
+  //console.log(queries);
   //console.log(query.get());
 
   // Creating routes
@@ -51,7 +52,7 @@ const server = http.createServer((req, res) => {
       req.on("end", () => {
         let newCar = JSON.parse(body);
 
-        // Validate the POSTed value
+        // Validate the DATA's value
         const error = dataValidation(newCar);
         const errors = Object.keys(error);
         if (errors.length) {
@@ -104,52 +105,88 @@ const server = http.createServer((req, res) => {
       });
 
       req.on("end", () => {
-        let modifyCar = JSON.parse(modifyBody);
+        let modifications = JSON.parse(modifyBody);
 
-        const error = dataValidation(modifyCar);
-        const errors = Object.keys(error);
+        fs.readFile("./api/cars.json", (err, data) => {
+          if (err) {
+            res.writeHead(500);
+            res.end("Data error");
+          } else {
+            const cars = JSON.parse(data);
 
-        if (errors.length) {
-          res.writeHead(400);
-          res.end(JSON.stringify(error));
-        } else {
-          fs.readFile("./api/cars.json", (err, data) => {
-            if (err) {
-              res.writeHead(500);
-              res.end("Data error");
+            const selectedCar = cars.filter((car) => car.id === id);
+
+            if (selectedCar.length) {
+              const newCar = { ...selectedCar[0], ...modifications };
+              const error = dataValidation(newCar);
+              const errors = Object.keys(error);
+
+              if (errors.length) {
+                res.writeHead(400);
+                res.end(JSON.stringify(error));
+              } else {
+                const modifiedCars = cars.map((car) => {
+                  if (car.id === id) {
+                    car = { ...newCar };
+                  }
+                  return car;
+                });
+
+                fs.writeFile(
+                  "./api/cars.json",
+                  JSON.stringify(modifiedCars),
+                  () => {
+                    res.setHeader("Type-Content", "application/json");
+                    res.writeHead(200);
+                    res.end(JSON.stringify(newCar));
+                  }
+                );
+              }
             } else {
-              const cars = JSON.parse(data);
-
-              // modify the car details
-              const newCars = cars.map((car) => {
-                if (car.id === id) {
-                  car = { ...car, ...modifyCar };
-                  modifyCar = { ...car };
-                }
-                return car;
-              });
-
-              fs.writeFile("./api/cars.json", JSON.stringify(newCars), () => {
-                // give back modified car as response
-                res.setHeader("Content-Type", "application/json");
-                res.writeHead(200);
-                res.end(JSON.stringify(modifyCar));
-              });
+              res.writeHead(400);
+              res.end("Non-exist id");
             }
-          });
-        }
+          }
+        });
       });
 
       break;
 
     //TODO: /api/products/{id} -> DELETE a item from the list by id
     case id && req.method === "DELETE":
-      res.end("DELETE product by id");
+      fs.readFile("./api/cars.json", (err, data) => {
+        if (err) {
+          res.writeHead(500);
+          res.end("Data error");
+        } else {
+          const cars = JSON.parse(data);
+
+          const filtered = cars.filter((car) => car.id === id);
+
+          if (filtered.length) {
+            const newCars = cars.filter((car) => car.id !== id);
+
+            fs.writeFile("./api/cars.json", JSON.stringify(newCars), () => {
+              res.setHeader("Content-Type", "application/json");
+              res.writeHead(200);
+              res.end(JSON.stringify(filtered));
+            });
+          } else {
+            res.writeHead(400);
+            res.end("Non-exist id");
+          }
+        }
+      });
       break;
 
-    //TODO: /api/products/fuels
-
-    //TODO: /api/products/types
+    //TODO: /api/fuels
+    case pathname === "/api/fuels" && req.method === "GET":
+      res.end(JSON.stringify(getFuelsList()));
+      break;
+    //TODO: /api/types
+    case pathname === "/api/types" && req.method === "GET":
+      res.end(JSON.stringify(getTypeList()));
+      break;
 
     //TODO: Get default response
     default:

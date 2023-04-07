@@ -1,15 +1,7 @@
-const fs = require("fs");
+const { getTypeList, getFuelsList } = require("./modules");
 
-let types = [];
-let fuelTypes = [];
-
-const data = fs.readFileSync("./api/cars.json");
-const cars = JSON.parse(data);
-
-cars.forEach((car) => {
-  if (!types.includes(car.type)) types.push(car.type);
-  if (!fuelTypes.includes(car.fuel_type)) fuelTypes.push(car.fuel_type);
-});
+let types = getTypeList();
+let fuelTypes = getFuelsList();
 
 const schema = {
   name: { type: "string", required: true },
@@ -20,31 +12,47 @@ const schema = {
   fuel_type: { type: "string", required: true, values: fuelTypes },
 };
 
+const checkType = (schemaType, addedType) => {
+  return typeof addedType !== schemaType;
+};
+
+const checkValue = (schemaValue, addedValue) => {
+  if (typeof schemaValue === "string") {
+    return !addedValue.match(schemaValue);
+  } else {
+    return !schemaValue.includes(addedValue);
+  }
+};
+
 const dataValidation = (object) => {
   const keys = Object.keys(schema);
 
   let error = {};
   for (const key of keys) {
-    if (object[key]) {
-      if (schema[key].required) {
-        if (String(object[key]).length === 0) {
-          error[key] = `required`;
+    if (schema[key].required) {
+      if (object[key]) {
+        const typeIsNotValid = checkType(schema[key].type, object[key]);
+        if (typeIsNotValid) {
+          error[key] = `Invalid type`;
         }
+        if (schema[key].values) {
+          const valueIsNotValid = checkValue(schema[key].values, object[key]);
+          if (valueIsNotValid) {
+            error[key] = `Invalid value`;
+          }
+        }
+      } else {
+        error[key] = "Required value";
       }
-
-      if (typeof object[key] !== schema[key].type) {
+    } else {
+      const typeIsNotValid = checkType(schema[key].type, object[key]);
+      if (typeIsNotValid) {
         error[key] = `Invalid type`;
       }
-
       if (schema[key].values) {
-        if (typeof schema[key].values === "string") {
-          if (!object[key].match(schema[key].values)) {
-            error[key] = `Invalid value`;
-          }
-        } else {
-          if (!schema[key].values.includes(object[key])) {
-            error[key] = `Invalid value`;
-          }
+        const valueIsNotValid = checkValue(schema[key].values, object[key]);
+        if (valueIsNotValid) {
+          error[key] = `Invalid value`;
         }
       }
     }
