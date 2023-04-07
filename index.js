@@ -27,7 +27,7 @@ const server = http.createServer((req, res) => {
 
   // Creating routes
   switch (true) {
-    //*     /api/products -> GET all items
+    //*         /api/products -> GET all items
     case pathname === "/api/products" && req.method === "GET":
       fs.readFile("./api/cars.json", (err, data) => {
         if (err) {
@@ -41,7 +41,7 @@ const server = http.createServer((req, res) => {
       });
       break;
 
-    //*     /api/products -> POST add new item to the list
+    //*         /api/products -> POST add new item to the list
     case pathname === "/api/products" && req.method === "POST":
       let body = "";
       req.on("data", (chunk) => {
@@ -63,11 +63,11 @@ const server = http.createServer((req, res) => {
               res.writeHead(500);
               res.end("Data error");
             } else {
-              console.log(newCar);
               const cars = JSON.parse(data);
               newCar = { id: getRandomId(cars), ...newCar };
               cars.push(newCar);
               fs.writeFile("./api/cars.json", JSON.stringify(cars), () => {
+                // give back the new car as response
                 res.setHeader("Content-Type", "application/json");
                 res.writeHead(200);
                 res.end(JSON.stringify(newCar));
@@ -78,7 +78,7 @@ const server = http.createServer((req, res) => {
       });
       break;
 
-    //*      /api/products/{id} -> GET a item from the list by id
+    //*         /api/products/{id} -> GET a item from the list by id
     case id && req.method === "GET":
       fs.readFile("./api/cars.json", (err, data) => {
         if (err) {
@@ -95,15 +95,61 @@ const server = http.createServer((req, res) => {
       });
       break;
 
-    //TODO: /api/products/{id} -> PATCH a item from the list by id
+    //*         /api/products/{id} -> PATCH a item from the list by id
     case id && req.method === "PATCH":
-      res.end("EDIT product by id");
+      let modifyBody = "";
+
+      req.on("data", (chunk) => {
+        modifyBody += chunk.toString();
+      });
+
+      req.on("end", () => {
+        let modifyCar = JSON.parse(modifyBody);
+
+        const error = dataValidation(modifyCar);
+        const errors = Object.keys(error);
+
+        if (errors.length) {
+          res.writeHead(400);
+          res.end(JSON.stringify(error));
+        } else {
+          fs.readFile("./api/cars.json", (err, data) => {
+            if (err) {
+              res.writeHead(500);
+              res.end("Data error");
+            } else {
+              const cars = JSON.parse(data);
+
+              // modify the car details
+              const newCars = cars.map((car) => {
+                if (car.id === id) {
+                  car = { ...car, ...modifyCar };
+                  modifyCar = { ...car };
+                }
+                return car;
+              });
+
+              fs.writeFile("./api/cars.json", JSON.stringify(newCars), () => {
+                // give back modified car as response
+                res.setHeader("Content-Type", "application/json");
+                res.writeHead(200);
+                res.end(JSON.stringify(modifyCar));
+              });
+            }
+          });
+        }
+      });
+
       break;
 
     //TODO: /api/products/{id} -> DELETE a item from the list by id
     case id && req.method === "DELETE":
       res.end("DELETE product by id");
       break;
+
+    //TODO: /api/products/fuels
+
+    //TODO: /api/products/types
 
     //TODO: Get default response
     default:
