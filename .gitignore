@@ -1,3 +1,6 @@
 node_modules
 .env
 original.json
+prev.js
+modules.js
+validations.js
