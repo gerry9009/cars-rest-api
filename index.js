@@ -5,7 +5,8 @@ const fs = require("fs");
 
 const bodyParser = require("body-parser");
 
-const { getRandomId } = require("./modules");
+const { getRandomId, getTypeList, getFuelsList } = require("./modules");
+const { dataValidation } = require("./validations");
 
 require("dotenv").config();
 
@@ -14,19 +15,18 @@ const port = process.env.PORT || 8000;
 // Middlewares
 app.use(bodyParser.json());
 
-/**
- * "id": string,
- * "name": string,
- * "price": string,
- * "type":string,
- * "seats":number,
- * "production_year": number,
- * "fuel_type": string
- */
-
-//TODO:         /api/products -> GET all items
+//*         /api/products -> GET all items
 app.get("/api/products", (req, res) => {
-  res.send("GET all items");
+  fs.readFile("./api/cars.json", (err, data) => {
+    if (err) {
+      res.status(500);
+      res.send({ error: "Data not found" });
+    } else {
+      let cars = JSON.parse(data);
+
+      res.send(cars);
+    }
+  });
   //TODO: Handle the queries here -> req.query
   /**
    * Queries
@@ -50,24 +50,44 @@ app.get("/api/products", (req, res) => {
 app.post("/api/products", (req, res) => {
   let newCar = req.body;
 
-  fs.readFile("./api/cars.json", (err, data) => {
-    if (err) {
-      res.send("Data not found");
-    } else {
-      let cars = JSON.parse(data);
-      newCar = { id: getRandomId(cars), ...newCar };
-      cars.push(newCar);
+  const error = dataValidation(newCar);
+  const errors = Object.keys(error);
 
-      fs.writeFile("./api/cars.json", JSON.stringify(cars), () => {
-        res.send(JSON.stringify(newCar));
-      });
-    }
-  });
+  if (errors.length) {
+    res.status(400);
+    res.send(JSON.stringify(error));
+  } else {
+    fs.readFile("./api/cars.json", (err, data) => {
+      if (err) {
+        res.status(500);
+        res.send({ error: "Data not found" });
+      } else {
+        let cars = JSON.parse(data);
+        newCar = { id: getRandomId(cars), ...newCar };
+        cars.push(newCar);
+
+        fs.writeFile("./api/cars.json", JSON.stringify(cars), () => {
+          res.send(newCar);
+        });
+      }
+    });
+  }
 });
 
-//TODO:         /api/products/{id} -> GET an item from the list by id
+//*         /api/products/{id} -> GET an item from the list by id
 app.get("/api/products/:id", (req, res) => {
-  res.send("GET an item from the list by id");
+  const id = req.params.id;
+
+  fs.readFile("./api/cars.json", (err, data) => {
+    const cars = JSON.parse(data);
+    const car = cars.filter((car) => car.id === id);
+    if (!car.length) {
+      res.status(404);
+      res.send({ error: `id ${id} not found` });
+    } else {
+      res.send(car);
+    }
+  });
 });
 
 //TODO:         /api/products/{id} -> PATCH a item from the list by id
@@ -80,18 +100,21 @@ app.delete("/api/products/:id", (req, res) => {
   res.send("DELETE an item from the list by id");
 });
 
-//TODO:         /api/fuels
+//*         /api/fuels
 app.get("/api/fuels", (req, res) => {
-  res.send("Fuels type");
+  const fuelList = getFuelsList();
+  res.send(fuelList);
 });
 
-//TODO:         /api/types
+//*         /api/types
 app.get("/api/types", (req, res) => {
-  res.send("Car types");
+  const typeList = getTypeList();
+  res.send(typeList);
 });
 
 app.get("*", (req, res) => {
-  res.send("Default route");
+  res.status(404);
+  res.send({ error: "Page not found" });
 });
 
 app.listen(port, () => {
