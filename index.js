@@ -1,7 +1,11 @@
 const express = require("express");
 const app = express();
 const path = require("path");
+const fs = require("fs");
+
 const bodyParser = require("body-parser");
+
+const { getRandomId } = require("./modules");
 
 require("dotenv").config();
 
@@ -20,7 +24,7 @@ app.use(bodyParser.json());
  * "fuel_type": string
  */
 
-//*         /api/products -> GET all items
+//TODO:         /api/products -> GET all items
 app.get("/api/products", (req, res) => {
   res.send("GET all items");
   //TODO: Handle the queries here -> req.query
@@ -42,32 +46,46 @@ app.get("/api/products", (req, res) => {
    */
 });
 
-//*         /api/products -> POST add new item to the list
+//*        /api/products -> POST add new item to the list
 app.post("/api/products", (req, res) => {
-  res.send("POST a new item to the list");
+  let newCar = req.body;
+
+  fs.readFile("./api/cars.json", (err, data) => {
+    if (err) {
+      res.send("Data not found");
+    } else {
+      let cars = JSON.parse(data);
+      newCar = { id: getRandomId(cars), ...newCar };
+      cars.push(newCar);
+
+      fs.writeFile("./api/cars.json", JSON.stringify(cars), () => {
+        res.send(JSON.stringify(newCar));
+      });
+    }
+  });
 });
 
-//*         /api/products/{id} -> GET an item from the list by id
+//TODO:         /api/products/{id} -> GET an item from the list by id
 app.get("/api/products/:id", (req, res) => {
   res.send("GET an item from the list by id");
 });
 
-//*         /api/products/{id} -> PATCH a item from the list by id
+//TODO:         /api/products/{id} -> PATCH a item from the list by id
 app.patch("/api/products/:id", (req, res) => {
   res.send("PATCH an item from the list by id");
 });
 
-//*         /api/products/{id} -> DELETE an item from the list by id
+//TODO:         /api/products/{id} -> DELETE an item from the list by id
 app.delete("/api/products/:id", (req, res) => {
   res.send("DELETE an item from the list by id");
 });
 
-//*         /api/fuels
+//TODO:         /api/fuels
 app.get("/api/fuels", (req, res) => {
   res.send("Fuels type");
 });
 
-//*         /api/types
+//TODO:         /api/types
 app.get("/api/types", (req, res) => {
   res.send("Car types");
 });
