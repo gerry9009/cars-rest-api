@@ -1,6 +1,5 @@
 const express = require("express");
 const app = express();
-const path = require("path");
 const fs = require("fs");
 
 const bodyParser = require("body-parser");
@@ -17,37 +16,73 @@ app.use(bodyParser.json());
 
 //*         /api/products -> GET all items
 app.get("/api/products", (req, res) => {
-  // get the database form the json
-  fs.readFile("./api/cars.json", (err, data) => {
-    // check if any problem with the database
-    if (err) {
-      res.status(500);
-      res.send({ error: "Data not found" });
-    } else {
-      // parse the JSON to array
-      let cars = JSON.parse(data);
+  const queries = req.query;
+  const queryKeys = Object.keys(queries);
+  // check the queries, if doesn't have, send the whole database
+  if (queryKeys.length) {
+    fs.readFile("./api/cars.json", (err, data) => {
+      // check if any problem with the database
+      if (err) {
+        res.status(500);
+        res.send({ error: "Data not found" });
+      } else {
+        // parse the JSON to array
+        let cars = JSON.parse(data);
 
-      // send data to the client
-      res.send(cars);
-    }
-  });
-  //TODO: Handle the queries here -> req.query
-  /**
-   * Queries
-   *
-   * name
-   * fuel_types
-   * type
-   *
-   * min_seats
-   * max_seats
-   *
-   * min_price
-   * max_price
-   *
-   * min_production_year
-   * max_production_year
-   */
+        // handle filtering database use queries
+        for (const query of queryKeys) {
+          // check the seats values
+          // check the price values
+          // check the production year values
+          // check all properties of elements matching the query
+
+          // filters items:
+          // name, fuel_type, type, min_seats, max_seats,
+          // min_price, max_price, min_production_year, max_production_year
+
+          if (query === "min_seats") {
+            cars = cars.filter((car) => car.seats > queries[query]);
+          } else if (query === "max_seats") {
+            cars = cars.filter((car) => car.seats < queries[query]);
+          } else if (query === "min_price") {
+            cars = cars.filter((car) => {
+              const price = car.price.substring(1);
+              return Number(price) > Number(queries[query]);
+            });
+          } else if (query === "max_price") {
+            cars = cars.filter((car) => {
+              const price = car.price.substring(1);
+              return Number(price) < Number(queries[query]);
+            });
+          } else if (query === "min_production_year") {
+            cars = cars.filter((car) => car.production_year > queries[query]);
+          } else if (query === "max_production_year") {
+            cars = cars.filter((car) => car.production_year < queries[query]);
+          } else {
+            cars = cars.filter((car) => car[query] === queries[query]);
+          }
+        }
+
+        // send data to the client
+        res.send(cars);
+      }
+    });
+  } else {
+    // get the database form the json
+    fs.readFile("./api/cars.json", (err, data) => {
+      // check if any problem with the database
+      if (err) {
+        res.status(500);
+        res.send({ error: "Data not found" });
+      } else {
+        // parse the JSON to array
+        let cars = JSON.parse(data);
+
+        // send data to the client
+        res.send(cars);
+      }
+    });
+  }
 });
 
 //*        /api/products -> POST add new item to the list
