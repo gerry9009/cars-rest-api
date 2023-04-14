@@ -133,41 +133,77 @@ app.patch("/api/products/:id", (req, res) => {
   } else {
     // get the database
     fs.readFile("./api/cars.json", (err, data) => {
-      const cars = JSON.parse(data);
-
-      // found the filtered element by id
-      const filteredCar = cars.filter((car) => car.id === id);
-
-      // check the element exists
-      if (filteredCar.length) {
-        // modify data in the element and change the element in the database
-        const newCar = { ...filteredCar[0], ...modifiedCar };
-        const newCars = cars.map((car) => {
-          if (car.id === id) {
-            return newCar;
-          } else {
-            return car;
-          }
-        });
-
-        // overwrite the data with new value
-        fs.writeFile("./api/cars.json", JSON.stringify(newCars), () => {
-          // send back to the client the modified element
-          res.send(newCar);
-        });
-
-        // if element not exist send error to the client
+      if (err) {
+        res.status(500);
+        res.send({ error: "Data not found" });
       } else {
-        res.status(404);
-        res.send({ error: `id ${id} not found` });
+        const cars = JSON.parse(data);
+
+        // found the filtered element by id
+        const filteredCar = cars.filter((car) => car.id === id);
+
+        // check the element exists
+        if (filteredCar.length) {
+          // modify data in the element and change the element in the database
+          const newCar = { ...filteredCar[0], ...modifiedCar };
+          const newCars = cars.map((car) => {
+            if (car.id === id) {
+              return newCar;
+            } else {
+              return car;
+            }
+          });
+
+          // overwrite the data with new value
+          fs.writeFile("./api/cars.json", JSON.stringify(newCars), () => {
+            // send back to the client the modified element
+            res.send(newCar);
+          });
+
+          // if element not exist send error to the client
+        } else {
+          res.status(404);
+          res.send({ error: `id ${id} not found` });
+        }
       }
     });
   }
 });
 
-//TODO:         /api/products/{id} -> DELETE an item from the list by id
+//*         /api/products/{id} -> DELETE an item from the list by id
 app.delete("/api/products/:id", (req, res) => {
-  res.send("DELETE an item from the list by id");
+  //get the id from the body
+  const id = req.params.id;
+
+  // get the database from JSON
+  fs.readFile("./api/cars.json", (err, data) => {
+    // send error if any problem with the database
+    if (err) {
+      res.status(500);
+      res.send({ error: "Data not found" });
+    } else {
+      // if the database exist, parse data from JSON
+      const cars = JSON.parse(data);
+
+      // find the required item by id
+      const filteredCar = cars.filter((car) => car.id === id);
+
+      // if the item exist, delete
+      if (filteredCar.length) {
+        // delete item by id
+        const newCars = cars.filter((car) => car.id !== id);
+
+        fs.writeFile("./api/cars.json", JSON.stringify(newCars), () => {
+          //send back the deleted item to the client
+          res.send(filteredCar);
+        });
+      } else {
+        // if the item doesn't exist send error
+        res.status(404);
+        res.send({ error: `id ${id} not found` });
+      }
+    }
+  });
 });
 
 //*         /api/fuels
