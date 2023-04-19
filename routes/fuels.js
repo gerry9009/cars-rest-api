@@ -1,12 +1,9 @@
 const express = require("express");
-const { getFuelsList } = require("../modules");
+const fuelTypes = require("../controllers/fuelController");
 
 const router = express.Router();
 
 //*         /api/fuels
-router.get("/", (req, res) => {
-  const fuelList = getFuelsList();
-  res.json(fuelList);
-});
+router.get("/", fuelTypes);
 
 module.exports = router;

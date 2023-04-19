@@ -1,6 +1,19 @@
 # Basic Node JS Rest API
 
-This is a Node.js project that provides a simple RESTful API for managing car data. It uses local JSON data and plain Node.js without any external libraries.
+### This project has three parts:
+
+- first branch: `basic_nodejs`
+  This is a Node.js project that provides a simple RESTful API for managing car data. It uses local JSON data and plain Node.js without any external libraries.
+- second branch: `express`
+  In the further development of the project, the express framework will be implemented in the project.
+
+- third branch: `mongoDB` as the `main` branch
+  The local JSON database has been replaced by a noSQL database, MongoDB
+  The `post.js` can help you upload `cars.json` to the MongoDB if the program has already been created.
+  Run the following commands:
+  ```
+  node post.js
+  ```
 
 ## Getting start
 

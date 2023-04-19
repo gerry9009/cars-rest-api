@@ -11,6 +11,7 @@ const port = process.env.PORT || 8000;
 const productsRouters = require("./routes/products");
 const fuelsRoute = require("./routes/fuels");
 const typesRoute = require("./routes/types");
+const notFoundRoute = require("./routes/error");
 
 // Middleware
 app.use(bodyParser.json());
@@ -19,11 +20,7 @@ app.use(bodyParser.json());
 app.use("/api/products", productsRouters);
 app.use("/api/fuels", fuelsRoute);
 app.use("/api/types", typesRoute);
-
-app.get("*", (req, res) => {
-  res.status(404);
-  res.send({ error: "Page not found" });
-});
+app.use("*", notFoundRoute);
 
 // connect to the DB
 mongoose

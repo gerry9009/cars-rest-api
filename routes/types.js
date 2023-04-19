@@ -1,12 +1,9 @@
 const express = require("express");
-const { getTypeList } = require("../modules");
+const getTypes = require("../controllers/typesController");
 
 const router = express.Router();
 
 //*         /api/types
-router.get("/", (req, res) => {
-  const typeList = getTypeList();
-  res.json(typeList);
-});
+router.get("/", getTypes);
 
 module.exports = router;
